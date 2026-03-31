@@ -4,7 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NexaBank — Admin</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap');
+</style>
 <style>
 :root {
   --bg: #f0f2f7;
@@ -24,7 +27,7 @@
   --yellow: #f59e0b;
 }
 * { margin:0; padding:0; box-sizing:border-box; }
-body { font-family:'Syne',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; overflow:hidden; }
+body { font-family:'Syne','Segoe UI','Helvetica Neue',Arial,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; overflow:hidden; }
 
 /* ── SIDEBAR ── */
 .sidebar {
@@ -374,7 +377,7 @@ tr:hover td { background:rgba(37,99,255,0.02); }
         </div>
         <div class="stat-card green">
           <div class="stat-icon">👤</div>
-          <div class="stat-val">18,294</div>
+          <div class="stat-val" id="statActiveUsers">18,294</div>
           <div class="stat-label">Active Users</div>
           <div class="stat-delta delta-up">↑ 834 new this week</div>
         </div>
@@ -468,36 +471,38 @@ tr:hover td { background:rgba(37,99,255,0.02); }
         <div class="table-wrap">
           <table>
             <tr><th>User</th><th>Account #</th><th>Balance</th><th>Status</th><th>Joined</th><th>Action</th></tr>
-            <tr>
-              <td><div class="user-cell"><div class="avatar av-blue">JM</div><div><div class="user-cell-name">James Miller</div><div class="user-cell-email">james@email.com</div></div></div></td>
+            <tbody id="usersTableBody">
+            <tr><td colspan="6" style="text-align:center;padding:20px;color:var(--muted)">Loading users...</td></tr>
+            </tbody>
+              <td><div class="user-cell"><div class="avatar av-blue">JM</div><div><div class="user-cell-name">James Miller</div><div class="user-cell-email"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="4329222e263003262e222a2f6d202c2e">[email&#160;protected]</a></div></div></div></td>
               <td class="td-mono">****4821</td><td class="td-bold">$24,310.00</td>
               <td><span class="badge badge-success"><span class="badge-dot"></span>Active</span></td>
               <td class="td-mono">Jan 12, 2024</td>
               <td><button class="chat-action-btn" style="font-size:0.68rem">View</button></td>
             </tr>
             <tr>
-              <td><div class="user-cell"><div class="avatar av-green">SR</div><div><div class="user-cell-name">Sofia Reyes</div><div class="user-cell-email">sofia@email.com</div></div></div></td>
+              <td><div class="user-cell"><div class="avatar av-green">SR</div><div><div class="user-cell-name">Sofia Reyes</div><div class="user-cell-email"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="661509000f0726030b070f0a4805090b">[email&#160;protected]</a></div></div></div></td>
               <td class="td-mono">****7743</td><td class="td-bold">$118,500.00</td>
               <td><span class="badge badge-success"><span class="badge-dot"></span>Active</span></td>
               <td class="td-mono">Mar 3, 2023</td>
               <td><button class="chat-action-btn" style="font-size:0.68rem">View</button></td>
             </tr>
             <tr>
-              <td><div class="user-cell"><div class="avatar av-orange">DK</div><div><div class="user-cell-name">David Kim</div><div class="user-cell-email">david.k@email.com</div></div></div></td>
+              <td><div class="user-cell"><div class="avatar av-orange">DK</div><div><div class="user-cell-name">David Kim</div><div class="user-cell-email"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="b7d3d6c1ded399dcf7d2dad6dedb99d4d8da">[email&#160;protected]</a></div></div></div></td>
               <td class="td-mono">****2209</td><td class="td-bold">$3,820.50</td>
               <td><span class="badge badge-pending"><span class="badge-dot"></span>KYC Pending</span></td>
               <td class="td-mono">Feb 28, 2025</td>
               <td><button class="chat-action-btn" style="font-size:0.68rem">View</button></td>
             </tr>
             <tr>
-              <td><div class="user-cell"><div class="avatar av-pink">AP</div><div><div class="user-cell-name">Aisha Patel</div><div class="user-cell-email">aisha@email.com</div></div></div></td>
+              <td><div class="user-cell"><div class="avatar av-pink">AP</div><div><div class="user-cell-name">Aisha Patel</div><div class="user-cell-email"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="6809011b0009280d05090104460b0705">[email&#160;protected]</a></div></div></div></td>
               <td class="td-mono">****9934</td><td class="td-bold">$67,000.00</td>
               <td><span class="badge badge-failed"><span class="badge-dot"></span>Suspended</span></td>
               <td class="td-mono">Nov 14, 2022</td>
               <td><button class="chat-action-btn" style="font-size:0.68rem">View</button></td>
             </tr>
             <tr>
-              <td><div class="user-cell"><div class="avatar av-teal">LC</div><div><div class="user-cell-name">Luis Chen</div><div class="user-cell-email">luis.c@email.com</div></div></div></td>
+              <td><div class="user-cell"><div class="avatar av-teal">LC</div><div><div class="user-cell-name">Luis Chen</div><div class="user-cell-email"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="f498819d87da97b49199959d98da979b99">[email&#160;protected]</a></div></div></div></td>
               <td class="td-mono">****3312</td><td class="td-bold">$9,244.00</td>
               <td><span class="badge badge-success"><span class="badge-dot"></span>Active</span></td>
               <td class="td-mono">Aug 7, 2024</td>
@@ -571,9 +576,9 @@ tr:hover td { background:rgba(37,99,255,0.02); }
         <div class="table-wrap">
           <table>
             <tr><th>Account Holder</th><th>Account #</th><th>Type</th><th>Balance</th><th>Opened</th><th>Status</th></tr>
-            <tr><td><div class="user-cell"><div class="avatar av-blue">JM</div><div><div class="user-cell-name">James Miller</div><div class="user-cell-email">james@email.com</div></div></div></td><td class="td-mono">****4821</td><td>Checking</td><td class="td-bold">$24,310.00</td><td class="td-mono">Jan 2024</td><td><span class="badge badge-success"><span class="badge-dot"></span>Active</span></td></tr>
-            <tr><td><div class="user-cell"><div class="avatar av-green">SR</div><div><div class="user-cell-name">Sofia Reyes</div><div class="user-cell-email">sofia@email.com</div></div></div></td><td class="td-mono">****7743</td><td>Savings</td><td class="td-bold">$118,500.00</td><td class="td-mono">Mar 2023</td><td><span class="badge badge-success"><span class="badge-dot"></span>Active</span></td></tr>
-            <tr><td><div class="user-cell"><div class="avatar av-pink">AP</div><div><div class="user-cell-name">Aisha Patel</div><div class="user-cell-email">aisha@email.com</div></div></div></td><td class="td-mono">****9934</td><td>Business</td><td class="td-bold">$67,000.00</td><td class="td-mono">Nov 2022</td><td><span class="badge badge-failed"><span class="badge-dot"></span>Suspended</span></td></tr>
+            <tr><td><div class="user-cell"><div class="avatar av-blue">JM</div><div><div class="user-cell-name">James Miller</div><div class="user-cell-email"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="d4beb5b9b1a794b1b9b5bdb8fab7bbb9">[email&#160;protected]</a></div></div></div></td><td class="td-mono">****4821</td><td>Checking</td><td class="td-bold">$24,310.00</td><td class="td-mono">Jan 2024</td><td><span class="badge badge-success"><span class="badge-dot"></span>Active</span></td></tr>
+            <tr><td><div class="user-cell"><div class="avatar av-green">SR</div><div><div class="user-cell-name">Sofia Reyes</div><div class="user-cell-email"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="374458515e5677525a565e5b1954585a">[email&#160;protected]</a></div></div></div></td><td class="td-mono">****7743</td><td>Savings</td><td class="td-bold">$118,500.00</td><td class="td-mono">Mar 2023</td><td><span class="badge badge-success"><span class="badge-dot"></span>Active</span></td></tr>
+            <tr><td><div class="user-cell"><div class="avatar av-pink">AP</div><div><div class="user-cell-name">Aisha Patel</div><div class="user-cell-email"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="91f0f8e2f9f0d1f4fcf0f8fdbff2fefc">[email&#160;protected]</a></div></div></div></td><td class="td-mono">****9934</td><td>Business</td><td class="td-bold">$67,000.00</td><td class="td-mono">Nov 2022</td><td><span class="badge badge-failed"><span class="badge-dot"></span>Suspended</span></td></tr>
           </table>
         </div>
       </div>
@@ -638,7 +643,7 @@ tr:hover td { background:rgba(37,99,255,0.02); }
           <table>
             <tr><th>User</th><th>Submitted</th><th>Document</th><th>Risk</th><th>Status</th><th>Actions</th></tr>
             <tr>
-              <td><div class="user-cell"><div class="avatar av-orange">DK</div><div><div class="user-cell-name">David Kim</div><div class="user-cell-email">david.k@email.com</div></div></div></td>
+              <td><div class="user-cell"><div class="avatar av-orange">DK</div><div><div class="user-cell-name">David Kim</div><div class="user-cell-email"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="a8ccc9dec1cc86c3e8cdc5c9c1c486cbc7c5">[email&#160;protected]</a></div></div></div></td>
               <td class="td-mono">Mar 25, 2026</td><td>Passport</td>
               <td><span class="badge badge-pending"><span class="badge-dot"></span>Medium</span></td>
               <td><span class="badge badge-pending"><span class="badge-dot"></span>Pending</span></td>
@@ -648,7 +653,7 @@ tr:hover td { background:rgba(37,99,255,0.02); }
               </td>
             </tr>
             <tr>
-              <td><div class="user-cell"><div class="avatar av-teal">MR</div><div><div class="user-cell-name">Maria Russo</div><div class="user-cell-email">maria.r@email.com</div></div></div></td>
+              <td><div class="user-cell"><div class="avatar av-teal">MR</div><div><div class="user-cell-name">Maria Russo</div><div class="user-cell-email"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="a4c9c5d6cdc58ad6e4c1c9c5cdc88ac7cbc9">[email&#160;protected]</a></div></div></div></td>
               <td class="td-mono">Mar 24, 2026</td><td>Driver's License</td>
               <td><span class="badge badge-success"><span class="badge-dot"></span>Low</span></td>
               <td><span class="badge badge-pending"><span class="badge-dot"></span>Pending</span></td>
@@ -658,7 +663,7 @@ tr:hover td { background:rgba(37,99,255,0.02); }
               </td>
             </tr>
             <tr>
-              <td><div class="user-cell"><div class="avatar av-pink">BW</div><div><div class="user-cell-name">Ben Walsh</div><div class="user-cell-email">ben.w@email.com</div></div></div></td>
+              <td><div class="user-cell"><div class="avatar av-pink">BW</div><div><div class="user-cell-name">Ben Walsh</div><div class="user-cell-email"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="8ae8efe4a4fdcaefe7ebe3e6a4e9e5e7">[email&#160;protected]</a></div></div></div></td>
               <td class="td-mono">Mar 23, 2026</td><td>National ID</td>
               <td><span class="badge badge-failed"><span class="badge-dot"></span>High</span></td>
               <td><span class="badge badge-pending"><span class="badge-dot"></span>Pending</span></td>
@@ -718,7 +723,7 @@ tr:hover td { background:rgba(37,99,255,0.02); }
 
 <div class="toast" id="toast"></div>
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 // ── PAGE NAVIGATION ──────────────────────────────────────────────────
 const pageTitles = { dashboard:'Dashboard', users:'Users', transactions:'Transactions', accounts:'Accounts', support:'Support Chat', kyc:'KYC Review', reports:'Reports', settings:'Settings' };
 
@@ -728,7 +733,8 @@ function goPage(id, el) {
   document.getElementById('page-'+id).classList.add('active');
   el.classList.add('active');
   document.getElementById('pageTitle').textContent = pageTitles[id] || id;
-  if(id==='support') renderTickets();
+  if(id==='support') { renderTickets(); loadSupportMessages(); }
+  if(id==='users') loadRealUsers();
 }
 
 // ── CHART ──────────────────────────────────────────────────────────────
@@ -912,6 +918,96 @@ function filterTickets(filter, btn) {
   renderTickets(filter);
 }
 
+// ── SUPABASE ────────────────────────────────────────────────────────────
+const SUPABASE_URL = 'https://dicvkqfdaocubcuqlvjy.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRpY3ZrcWZkYW9jdWJjdXFsdmp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4NDExODUsImV4cCI6MjA5MDQxNzE4NX0.gBF1idyMCqXKHwwPEbaYAXN-YGAH3EOfEVBmt80Jiac';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Load real users from Supabase
+async function loadRealUsers() {
+  const { data, error } = await sb.from('profiles').select('*').order('created_at', { ascending: false });
+  const el = document.getElementById('usersTableBody');
+  if (!el) return;
+  if (!data || data.length === 0) {
+    el.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--muted)">No registered users yet</td></tr>';
+    document.getElementById('statActiveUsers').textContent = '0';
+    return;
+  }
+  const avColors = ['av-blue','av-green','av-orange','av-pink','av-teal'];
+  el.innerHTML = data.map((u, i) => {
+    const initials = `${u.first_name?.[0]||''}${u.last_name?.[0]||''}`.toUpperCase() || '??';
+    const av = avColors[i % avColors.length];
+    const name = `${u.first_name||''} ${u.last_name||''}`.trim() || 'Unknown';
+    const balance = parseFloat(u.balance||0).toFixed(2);
+    const status = u.status || 'active';
+    const joined = u.created_at ? new Date(u.created_at).toLocaleDateString('en-US',{month:'short',year:'numeric'}) : '—';
+    return `<tr>
+      <td><div class="user-cell"><div class="avatar ${av}">${initials}</div><div><div class="user-cell-name">${name}</div><div class="user-cell-email">${u.email||''}</div></div></div></td>
+      <td class="td-mono">${u.account_number||'—'}</td>
+      <td class="td-bold">$${balance}</td>
+      <td><span class="badge ${status==='active'?'badge-success':'badge-failed'}"><span class="badge-dot"></span>${status}</span></td>
+      <td class="td-mono">${joined}</td>
+      <td>
+        <button class="chat-action-btn" style="font-size:0.68rem" onclick="updateBalance('${u.id}','${name}',${balance})">💰 Balance</button>
+        <button class="chat-action-btn" style="font-size:0.68rem;background:rgba(239,68,68,0.1);color:var(--red)" onclick="toggleStatus('${u.id}','${status}')">
+          ${status==='active'?'🔒 Suspend':'✓ Activate'}
+        </button>
+      </td>
+    </tr>`;
+  }).join('');
+  document.getElementById('statActiveUsers').textContent = data.filter(u=>u.status==='active').length.toLocaleString();
+  // Update header stats
+  const hActive = document.getElementById('hActive');
+  if(hActive) hActive.textContent = data.filter(u=>u.status==='active').length;
+}
+
+async function updateBalance(userId, name, currentBal) {
+  const amt = prompt(`Update balance for ${name}\nCurrent: $${currentBal}\n\nEnter new balance:`);
+  if (amt === null || amt === '') return;
+  const newBal = parseFloat(amt);
+  if (isNaN(newBal)) { showToast('Invalid amount'); return; }
+  const { error } = await sb.from('profiles').update({ balance: newBal }).eq('id', userId);
+  if (error) { showToast('Error updating balance'); return; }
+  showToast(`✅ Balance updated to $${newBal.toFixed(2)}`);
+  loadRealUsers();
+}
+
+async function toggleStatus(userId, currentStatus) {
+  const newStatus = currentStatus === 'active' ? 'suspended' : 'active';
+  await sb.from('profiles').update({ status: newStatus }).eq('id', userId);
+  showToast(`Account ${newStatus}`);
+  loadRealUsers();
+}
+
+// Load real support messages
+async function loadSupportMessages() {
+  const { data } = await sb.from('support_messages').select('*').eq('from','customer').order('created_at', { ascending: false });
+  if (!data || data.length === 0) return;
+  // Group by user
+  const grouped = {};
+  data.forEach(m => {
+    if (!grouped[m.user_id]) grouped[m.user_id] = { ...m, messages: [] };
+    grouped[m.user_id].messages.push(m);
+  });
+  const realTickets = Object.values(grouped).map((g, i) => ({
+    id: `TKT-R${String(i+1).padStart(3,'0')}`,
+    name: g.user_name || g.user_email,
+    avatar: (g.user_name||'??').split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2),
+    avCls: ['av-blue','av-green','av-orange','av-pink','av-teal'][i%5],
+    subject: 'Customer Support Request',
+    status: 'open', priority: 'med',
+    time: new Date(g.created_at).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}),
+    unread: g.messages.length,
+    account: '—', balance: '—',
+    email: g.user_email || '—', phone: '—', joined: '—',
+    messages: g.messages.map(m => ({ from: 'customer', text: m.message, time: new Date(m.created_at).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}) }))
+  }));
+  if (realTickets.length > 0) {
+    tickets.unshift(...realTickets);
+    document.getElementById('supportBadge').textContent = realTickets.length;
+  }
+}
+
 // ── TOAST ──────────────────────────────────────────────────────────────
 function showToast(msg) {
   const t = document.getElementById('toast');
@@ -920,32 +1016,4 @@ function showToast(msg) {
   setTimeout(()=>t.classList.remove('show'), 2500);
 }
 
-// ── LIVE ACTIVITY TICKER ───────────────────────────────────────────────
-const liveEvents = [
-  'New transfer: $340 — Luis Chen','Deposit received: $1,200 — James Miller','Login from new device — Sofia Reyes','Card payment: $89.99 — David Kim','New account opened — Maria Russo'
-];
-let liveIdx = 0;
-setInterval(() => {
-  const af2 = document.getElementById('activityFeed');
-  if(!af2) return;
-  const items = af2.querySelectorAll('.activity-item');
-  if(items.length) {
-    items[items.length-1].remove();
-    const div = document.createElement('div');
-    div.className = 'activity-item';
-    div.style.animation = 'none';
-    div.innerHTML = `<div class="activity-icon ai-blue">🔄</div><div class="activity-text"><div class="activity-title">${liveEvents[liveIdx%liveEvents.length]}</div><div class="activity-sub">Just now</div></div><div class="activity-time">now</div>`;
-    af2.prepend(div);
-    liveIdx++;
-  }
-}, 5000);
-
-// ── ENTER TO SEND ──────────────────────────────────────────────────────
-document.addEventListener('keydown', e => {
-  if(e.key==='Enter' && !e.shiftKey && document.activeElement.id==='chatInput') {
-    e.preventDefault(); sendMessage();
-  }
-});
-</script>
-</body>
-</html>
+// ── L
