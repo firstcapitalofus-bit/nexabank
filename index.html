@@ -294,7 +294,7 @@ async function register() {
 
   // Save profile
   const acctNum = '****' + Math.floor(1000 + Math.random() * 9000);
-  await sb.from('profiles').insert({
+  const { error: profileError } = await sb.from('profiles').insert({
     id: data.user.id,
     first_name: first,
     last_name: last,
@@ -306,6 +306,12 @@ async function register() {
     status: 'active',
     created_at: new Date().toISOString()
   });
+
+  if (profileError) {
+    showMsg('reg-msg', 'Auth created but profile error: ' + profileError.message, 'error');
+    btn.disabled = false; btn.textContent = 'Create Account';
+    return;
+  }
 
   showMsg('reg-msg', '✅ Account created! Please check your email to verify then sign in.', 'success');
   btn.disabled = false; btn.textContent = 'Create Account';
