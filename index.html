@@ -317,6 +317,12 @@ async function register() {
   btn.disabled = false; btn.textContent = 'Create Account';
 }
 
+// Check if suspended
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.get('suspended')) {
+  showMsg('login-msg', '🔒 Your account has been suspended. Contact support.', 'error');
+}
+
 // Check if already logged in
 sb.auth.getSession().then(({ data }) => {
   if (data.session) window.location.href = 'dashboard.html';
