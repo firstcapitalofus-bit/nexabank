@@ -504,6 +504,22 @@ async function handlePinComplete() {
 }
 
 // ── SUPPORT CHAT ──────────────────────────────────────────────────────
+async function loadChatHistory() {
+  const { data } = await sb.from('support_messages').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: true });
+  if (!data || data.length === 0) return;
+  const chatBox = document.getElementById('chatBox');
+  chatBox.innerHTML = '<div class="cm them"><div class="cb">👋 Welcome to NexaBank Support! How can we help you today?</div><div class="ct">NexaBank · Now</div></div>';
+  data.forEach(m => {
+    const isAdmin = m.sender === 'admin';
+    const time = new Date(m.created_at).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+    chatBox.innerHTML += `<div class="cm ${isAdmin?'them':'me'}">
+      <div class="cb">${m.message}</div>
+      <div class="ct">${isAdmin?'NexaBank Support':'You'} · ${time}</div>
+    </div>`;
+  });
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+
 async function sendChat() {
   const input = document.getElementById('chatInput');
   const text = input.value.trim();
@@ -514,7 +530,7 @@ async function sendChat() {
   chatBox.scrollTop = chatBox.scrollHeight;
   input.value = '';
 
-  const { error } = await sb.from('support_messages').insert({
+  await sb.from('support_messages').insert({
     user_id: currentUser.id,
     user_name: `${currentProfile?.first_name||''} ${currentProfile?.last_name||''}`.trim() || currentUser.email,
     user_email: currentUser.email,
@@ -522,13 +538,6 @@ async function sendChat() {
     sender: 'customer',
     created_at: new Date().toISOString()
   });
-
-  if (error) console.log('Support error:', error.message);
-
-  setTimeout(() => {
-    chatBox.innerHTML += `<div class="cm them"><div class="cb">Thank you for your message. A NexaBank agent will respond shortly.</div><div class="ct">NexaBank Support · Now</div></div>`;
-    chatBox.scrollTop = chatBox.scrollHeight;
-  }, 1000);
 }
 
 // ── PROFILE ───────────────────────────────────────────────────────────
@@ -576,6 +585,7 @@ function switchPage(id, btn) {
   if (btn) btn.classList.add('on');
   window.scrollTo(0,0);
   if (id === 'history') loadTx();
+  if (id === 'support') loadChatHistory();
 }
 
 // ── HELPERS ───────────────────────────────────────────────────────────

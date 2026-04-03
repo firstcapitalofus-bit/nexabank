@@ -287,44 +287,70 @@ async function loadTx(){
 
 // SUPPORT
 let _sd={};
+let _activeUid='';
+
 async function loadSupport(){
   document.getElementById('tlist').innerHTML='<div class="empty"><div class="empty-icon">⏳</div>Loading...</div>';
-  const {data}=await sb.from('support_messages').select('*').eq('sender','customer').order('created_at',{ascending:false});
+  const {data}=await sb.from('support_messages').select('*').order('created_at',{ascending:true});
   if(!data||data.length===0){document.getElementById('tlist').innerHTML='<div class="empty"><div class="empty-icon">💬</div>No messages yet</div>';return;}
   const g={};
-  data.forEach(m=>{if(!g[m.user_id])g[m.user_id]={name:m.user_name||m.user_email,email:m.user_email,msgs:[]};g[m.user_id].msgs.push(m);});
+  data.forEach(m=>{
+    if(!g[m.user_id])g[m.user_id]={name:m.user_name||m.user_email,email:m.user_email,msgs:[]};
+    g[m.user_id].msgs.push(m);
+  });
   _sd=g;
   document.getElementById('tlist').innerHTML=Object.entries(g).map(([uid,gr])=>`
     <div class="titem" onclick="openT('${uid}')">
-      <div class="ti-top"><div class="ti-name">${gr.name}</div><div class="ti-time">${new Date(gr.msgs[0].created_at).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})}</div></div>
+      <div class="ti-top"><div class="ti-name">${gr.name}</div><div class="ti-time">${new Date(gr.msgs[gr.msgs.length-1].created_at).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})}</div></div>
       <div class="ti-sub">Support Request (${gr.msgs.length} msg)</div>
-      <div class="ti-prev">${gr.msgs[0].message}</div>
+      <div class="ti-prev">${gr.msgs[gr.msgs.length-1].message}</div>
     </div>`).join('');
 }
 
 function openT(uid){
   const g=_sd[uid];if(!g)return;
+  _activeUid=uid;
   document.getElementById('cname').textContent=g.name;
   document.getElementById('csub').textContent=g.email;
   const body=document.getElementById('cbody');
-  body.innerHTML=g.msgs.map(m=>`
-    <div class="mw cu">
-      <div class="mav">${(g.name||'?')[0]}</div>
+  body.innerHTML=g.msgs.map(m=>{
+    const isAdmin = m.sender==='admin';
+    return `<div class="mw ${isAdmin?'ag':'cu'}">
+      <div class="mav ${isAdmin?'admin':''}">${isAdmin?'AD':(g.name||'?')[0]}</div>
       <div><div class="mbub">${m.message}</div><div class="mtime">${new Date(m.created_at).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})}</div></div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
   body.scrollTop=body.scrollHeight;
   document.getElementById('cwin').style.display='block';
 }
 
-function sendR(){
+async function sendR(){
   const inp=document.getElementById('cinput');
-  const txt=inp.value.trim();if(!txt)return;
+  const txt=inp.value.trim();if(!txt||!_activeUid)return;
+  const g=_sd[_activeUid];if(!g)return;
   const body=document.getElementById('cbody');
   const t=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+
+  // Save to Supabase
+  const {error}=await sb.from('support_messages').insert({
+    user_id: _activeUid,
+    user_name: g.name,
+    user_email: g.email,
+    message: txt,
+    sender: 'admin',
+    created_at: new Date().toISOString()
+  });
+
+  if(error){ toast('Error: '+error.message); return; }
+
+  // Show in chat
   body.innerHTML+=`<div class="mw ag"><div class="mav admin">AD</div><div><div class="mbub">${txt}</div><div class="mtime">${t}</div></div></div>`;
   body.scrollTop=body.scrollHeight;
   inp.value='';
   toast('Reply sent ✓');
+
+  // Update local data
+  g.msgs.push({message:txt, sender:'admin', created_at:new Date().toISOString()});
 }
 
 function iq(txt){document.getElementById('cinput').value=txt;document.getElementById('cinput').focus();}
