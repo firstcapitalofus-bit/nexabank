@@ -519,7 +519,7 @@ async function sendChat() {
     user_name: `${currentProfile?.first_name||''} ${currentProfile?.last_name||''}`.trim() || currentUser.email,
     user_email: currentUser.email,
     message: text,
-    from: 'customer',
+    sender: 'customer',
     created_at: new Date().toISOString()
   });
 

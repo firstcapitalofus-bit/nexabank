@@ -289,7 +289,7 @@ async function loadTx(){
 let _sd={};
 async function loadSupport(){
   document.getElementById('tlist').innerHTML='<div class="empty"><div class="empty-icon">⏳</div>Loading...</div>';
-  const {data}=await sb.from('support_messages').select('*').eq('from','customer').order('created_at',{ascending:false});
+  const {data}=await sb.from('support_messages').select('*').eq('sender','customer').order('created_at',{ascending:false});
   if(!data||data.length===0){document.getElementById('tlist').innerHTML='<div class="empty"><div class="empty-icon">💬</div>No messages yet</div>';return;}
   const g={};
   data.forEach(m=>{if(!g[m.user_id])g[m.user_id]={name:m.user_name||m.user_email,email:m.user_email,msgs:[]};g[m.user_id].msgs.push(m);});
