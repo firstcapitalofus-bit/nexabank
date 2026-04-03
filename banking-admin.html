@@ -241,27 +241,60 @@ async function loadUsers() {
     const nm = `${u.first_name||''} ${u.last_name||''}`.trim()||'Unknown';
     const bal = parseFloat(u.balance||0).toFixed(2);
     const st = u.status||'active';
-    return `<div class="urow">
+    const since = u.member_since || new Date(u.created_at||Date.now()).getFullYear();
+    return `<div class="urow" style="flex-wrap:wrap;gap:8px">
       <div class="av ${avs[i%5]}">${ini}</div>
       <div class="uinfo">
         <div class="uname">${nm} <span class="badge ${st==='active'?'bg-a':'bg-s'}">${st}</span></div>
-        <div class="uemail">${u.email||''} · $${bal}</div>
+        <div class="uemail">${u.email||''} · $${bal} · Since ${since}</div>
       </div>
-      <div class="ubtns">
-        <button class="ab ab-b" onclick="editBal('${u.id}','${nm}',${bal})">💰</button>
-        <button class="ab ${st==='active'?'ab-r':'ab-g'}" onclick="toggleU('${u.id}','${st}')">${st==='active'?'🔒':'✓'}</button>
+      <div class="ubtns" style="flex-wrap:wrap;gap:4px">
+        <button class="ab ab-b" onclick="creditBal('${u.id}','${nm}',${bal})">💰 Credit</button>
+        <button class="ab ab-b" onclick="editBal('${u.id}','${nm}',${bal})" style="background:rgba(245,158,11,0.1);color:#f59e0b">✏️ Balance</button>
+        <button class="ab ab-b" onclick="editSince('${u.id}','${since}')" style="background:rgba(139,92,246,0.1);color:#8b5cf6">📅 Since</button>
+        <button class="ab ${st==='active'?'ab-r':'ab-g'}" onclick="toggleU('${u.id}','${st}')">${st==='active'?'🔒 Suspend':'✓ Activate'}</button>
       </div>
     </div>`;
   }).join('');
 }
 
+async function creditBal(id, name, cur) {
+  const org = prompt(`Credit account for ${name}\n\nSender name or organisation:\n(e.g. "Salary - ABC Corp" or "Wire Transfer")`);
+  if (org === null) return;
+  const amt = prompt(`Amount to credit to ${name}:`);
+  if (amt === null) return;
+  const num = parseFloat(amt);
+  if (isNaN(num) || num <= 0) { toast('Invalid amount'); return; }
+  const newBal = parseFloat(cur) + num;
+  await sb.from('profiles').update({ balance: newBal }).eq('id', id);
+  await sb.from('transactions').insert({
+    user_id: id,
+    type: 'credit',
+    amount: num,
+    description: org || 'Credit',
+    created_at: new Date().toISOString()
+  });
+  toast(`✅ $${num.toFixed(2)} credited from "${org}"`);
+  loadUsers();
+}
+
 async function editBal(id,name,cur){
-  const v=prompt(`New balance for ${name}\nCurrent: $${cur}`);
+  const v=prompt(`Set exact balance for ${name}\nCurrent: $${cur}`);
   if(v===null)return;
   const n=parseFloat(v);
   if(isNaN(n)){toast('Invalid');return;}
   await sb.from('profiles').update({balance:n}).eq('id',id);
-  toast(`✅ $${n.toFixed(2)} set`);
+  toast(`✅ Balance set to $${n.toFixed(2)}`);
+  loadUsers();
+}
+
+async function editSince(id, current) {
+  const yr = prompt(`Edit Member Since year for this account\nCurrent: ${current}\n\nEnter year (e.g. 2020):`);
+  if (yr === null) return;
+  const year = parseInt(yr);
+  if (isNaN(year) || year < 1900 || year > 2100) { toast('Invalid year'); return; }
+  await sb.from('profiles').update({ member_since: year }).eq('id', id);
+  toast(`✅ Member Since updated to ${year}`);
   loadUsers();
 }
 

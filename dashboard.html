@@ -327,7 +327,7 @@ async function loadProfile() {
   document.getElementById('balAmt').textContent = `$${bal}`;
   document.getElementById('balAcct').textContent = `Account ${data.account_number||'—'}`;
   document.getElementById('acctType').textContent = cap(data.account_type||'checking');
-  document.getElementById('acctSince').textContent = new Date(data.created_at||Date.now()).getFullYear();
+  document.getElementById('acctSince').textContent = data.member_since || new Date(data.created_at||Date.now()).getFullYear();
   document.getElementById('myAcctNum').textContent = data.account_number||'—';
   document.getElementById('myAcctType').textContent = cap(data.account_type||'checking');
 
@@ -339,7 +339,7 @@ async function loadProfile() {
   document.getElementById('pd-type').textContent = cap(data.account_type||'checking');
   document.getElementById('pd-bal').textContent = `$${bal}`;
   document.getElementById('pd-phone').textContent = data.phone||'—';
-  document.getElementById('pd-since').textContent = new Date(data.created_at||Date.now()).toLocaleDateString('en-US',{month:'long',year:'numeric'});
+  document.getElementById('pd-since').textContent = data.member_since ? `Since ${data.member_since}` : new Date(data.created_at||Date.now()).toLocaleDateString('en-US',{month:'long',year:'numeric'});
   document.getElementById('edit-first').value = data.first_name||'';
   document.getElementById('edit-last').value = data.last_name||'';
   document.getElementById('edit-phone').value = data.phone||'';
