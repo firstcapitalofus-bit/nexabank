@@ -347,10 +347,41 @@ sb.auth.getSession().then(({ data }) => {
 });
 
 // Floating support chat
+let guestId = localStorage.getItem('nexabank_guest_id');
+if (!guestId) {
+  // Generate valid UUID v4
+  guestId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random()*16|0, v = c=='x' ? r : (r&0x3|0x8);
+    return v.toString(16);
+  });
+  localStorage.setItem('nexabank_guest_id', guestId);
+}
+let floatOpen = false;
+let floatRefreshInterval = null;
+
 function toggleSupportChat() {
   const box = document.getElementById('floatChatBox');
-  box.style.display = box.style.display === 'none' ? 'block' : 'none';
-  if (box.style.display === 'block') document.getElementById('floatInput').focus();
+  floatOpen = !floatOpen;
+  box.style.display = floatOpen ? 'block' : 'none';
+  if (floatOpen) {
+    loadFloatHistory();
+    document.getElementById('floatInput').focus();
+    floatRefreshInterval = setInterval(loadFloatHistory, 8000);
+  } else {
+    clearInterval(floatRefreshInterval);
+  }
+}
+
+async function loadFloatHistory() {
+  const { data } = await sb.from('support_messages').select('*').eq('user_id', guestId).order('created_at', { ascending: true });
+  if (!data || data.length === 0) return;
+  const msgs = document.getElementById('floatMsgs');
+  msgs.innerHTML = '<div style="background:#f0f2f7;padding:8px 11px;border-radius:0 10px 10px 10px;max-width:85%">👋 Hi! How can we help you today?</div>';
+  data.forEach(m => {
+    const isAdmin = m.sender === 'admin';
+    msgs.innerHTML += `<div style="background:${isAdmin?'#f0f2f7':'#2563ff'};color:${isAdmin?'#0c0e1a':'#fff'};padding:8px 11px;border-radius:${isAdmin?'0 10px 10px 10px':'10px 0 10px 10px'};max-width:85%;${isAdmin?'':'align-self:flex-end;margin-left:auto'}">${m.message}</div>`;
+  });
+  msgs.scrollTop = msgs.scrollHeight;
 }
 
 async function sendFloatMsg() {
@@ -362,17 +393,13 @@ async function sendFloatMsg() {
   msgs.scrollTop = msgs.scrollHeight;
   input.value = '';
   await sb.from('support_messages').insert({
-    user_id: '00000000-0000-0000-0000-000000000000',
-    user_name: 'Guest',
+    user_id: guestId,
+    user_name: 'Guest Support',
     user_email: 'guest@nexabank.com',
     message: text,
     sender: 'customer',
     created_at: new Date().toISOString()
   });
-  setTimeout(() => {
-    msgs.innerHTML += `<div style="background:#f0f2f7;padding:8px 11px;border-radius:0 10px 10px 10px;max-width:85%">Thank you! A NexaBank agent will respond shortly.</div>`;
-    msgs.scrollTop = msgs.scrollHeight;
-  }, 800);
 }
 </script>
 </body>
