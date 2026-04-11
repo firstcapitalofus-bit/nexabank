@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NexaBank Admin</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+<script>emailjs.init('vGE8j42QgdnH89kk9');</script>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 body { font-family: Arial, sans-serif; background:#f0f2f7; color:#0c0e1a; min-height:100vh; padding-bottom:70px; }
@@ -266,6 +268,10 @@ async function creditBal(id, name, cur) {
   const num = parseFloat(amt);
   if (isNaN(num) || num <= 0) { toast('Invalid amount'); return; }
   const newBal = parseFloat(cur) + num;
+
+  // Get user email for alert
+  const {data: u} = await sb.from('profiles').select('email').eq('id', id).single();
+
   await sb.from('profiles').update({ balance: newBal }).eq('id', id);
   await sb.from('transactions').insert({
     user_id: id,
@@ -274,7 +280,21 @@ async function creditBal(id, name, cur) {
     description: org || 'Credit',
     created_at: new Date().toISOString()
   });
-  toast(`✅ $${num.toFixed(2)} credited from "${org}"`);
+
+  // Send credit email alert to customer
+  try {
+    await emailjs.send('service_q1noscr', 'template_x0sjb2o', {
+      to_email: u.email,
+      to_name: name,
+      alert_type: 'CREDIT',
+      amount: `$${num.toLocaleString('en-US',{minimumFractionDigits:2})}`,
+      sender: org || 'NexaBank Credit',
+      date: new Date().toLocaleString('en-US',{month:'long',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'}),
+      balance: `$${newBal.toLocaleString('en-US',{minimumFractionDigits:2})}`
+    });
+  } catch(e) { console.log('Email error:', e); }
+
+  toast(`✅ $${num.toFixed(2)} credited from "${org}" — Alert sent!`);
   loadUsers();
 }
 
