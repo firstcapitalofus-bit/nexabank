@@ -248,14 +248,21 @@ async function loadUsers() {
     const since = u.member_since || new Date(u.created_at||Date.now()).getFullYear();
     const location = u.city && u.country ? `📍 ${u.city}, ${u.country}` : u.country ? `📍 ${u.country}` : '📍 Unknown';
     const lastLogin = u.last_login ? new Date(u.last_login).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : 'Never';
-    return `<div class="urow" style="flex-wrap:wrap;gap:8px">
-      <div class="av ${avs[i%5]}">${ini}</div>
-      <div class="uinfo">
-        <div class="uname">${nm} <span class="badge ${st==='active'?'bg-a':'bg-s'}">${st}</span></div>
-        <div class="uemail">${u.email||''} · $${bal}</div>
-        <div class="uemail" style="color:#2563ff">${location} · Last login: ${lastLogin}</div>
+    return `<div style="background:#f8f9fc;border-radius:10px;padding:14px;margin-bottom:10px;border:1px solid #e8eaf0">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <div class="av ${avs[i%5]}" style="flex-shrink:0">${ini}</div>
+        <div style="flex:1">
+          <div style="font-size:0.88rem;font-weight:800">${nm} <span class="badge ${st==='active'?'bg-a':'bg-s'}">${st}</span></div>
+          <div style="font-size:0.72rem;color:#8a93b0">${u.email||''}</div>
+        </div>
       </div>
-      <div class="ubtns" style="flex-wrap:wrap;gap:4px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;font-size:0.72rem">
+        <div style="background:#fff;padding:6px 10px;border-radius:7px;border:1px solid #e2e6f0"><span style="color:#8a93b0">Balance</span><br><strong style="color:#2563ff">$${bal}</strong></div>
+        <div style="background:#fff;padding:6px 10px;border-radius:7px;border:1px solid #e2e6f0"><span style="color:#8a93b0">Since</span><br><strong>${since}</strong></div>
+        <div style="background:#fff;padding:6px 10px;border-radius:7px;border:1px solid #e2e6f0;grid-column:1/-1"><span style="color:#8a93b0">Location</span><br><strong>${location}</strong></div>
+        <div style="background:#fff;padding:6px 10px;border-radius:7px;border:1px solid #e2e6f0;grid-column:1/-1"><span style="color:#8a93b0">Last Login</span><br><strong>${lastLogin}</strong></div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
         <button class="ab ab-b" onclick="creditBal('${u.id}','${nm}',${bal})">💰 Credit</button>
         <button class="ab ab-b" onclick="editBal('${u.id}','${nm}',${bal})" style="background:rgba(245,158,11,0.1);color:#f59e0b">✏️ Balance</button>
         <button class="ab ab-b" onclick="editSince('${u.id}','${since}')" style="background:rgba(139,92,246,0.1);color:#8b5cf6">📅 Since</button>
