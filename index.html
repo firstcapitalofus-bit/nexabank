@@ -271,6 +271,19 @@ function showMsg(id, msg, type) {
   el.className = 'msg ' + type;
 }
 
+async function getLocation() {
+  try {
+    const res = await fetch('https://ipapi.co/json/');
+    const data = await res.json();
+    return {
+      country: data.country_name || '—',
+      city: data.city || '—',
+      ip: data.ip || '—',
+      flag: data.country_code ? `https://flagcdn.com/16x12/${data.country_code.toLowerCase()}.png` : ''
+    };
+  } catch(e) { return { country: '—', city: '—', ip: '—', flag: '' }; }
+}
+
 async function login() {
   const email = document.getElementById('login-email').value.trim();
   const pass = document.getElementById('login-pass').value;
@@ -282,6 +295,14 @@ async function login() {
     showMsg('login-msg', error.message, 'error');
     btn.disabled = false; btn.textContent = 'Sign In';
   } else {
+    // Save location on login
+    const loc = await getLocation();
+    await sb.from('profiles').update({
+      country: loc.country,
+      city: loc.city,
+      last_ip: loc.ip,
+      last_login: new Date().toISOString()
+    }).eq('id', data.user.id);
     showMsg('login-msg', 'Welcome back! Redirecting...', 'success');
     setTimeout(() => window.location.href = 'dashboard.html', 1200);
   }
