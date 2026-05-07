@@ -127,6 +127,31 @@ body { font-family:Arial,sans-serif; background:#f0f2f7; color:#0c0e1a; min-heig
 /* TOAST */
 .toast { position:fixed; bottom:68px; left:50%; transform:translateX(-50%) translateY(30px); background:#0c0e1a; color:#fff; padding:9px 16px; border-radius:8px; font-size:0.75rem; font-weight:700; z-index:999; opacity:0; transition:all 0.25s; white-space:nowrap; }
 .toast.on { transform:translateX(-50%) translateY(0); opacity:1; }
+
+/* SUSPENDED MODAL */
+.sus-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:1000; display:flex; align-items:center; justify-content:center; padding:20px; }
+.sus-box { background:#fff; border-radius:16px; padding:28px 22px; width:100%; max-width:340px; text-align:center; }
+.sus-icon { font-size:2.5rem; margin-bottom:14px; }
+.sus-title { font-size:1rem; font-weight:900; color:#0c0e1a; margin-bottom:10px; line-height:1.4; }
+.sus-msg { font-size:0.8rem; color:#5a607a; line-height:1.6; margin-bottom:20px; }
+.sus-btn1 { width:100%; padding:13px; background:#0c0e1a; color:#fff; border:none; border-radius:8px; font-size:0.88rem; font-weight:700; cursor:pointer; font-family:Arial,sans-serif; margin-bottom:10px; }
+.sus-btn2 { width:100%; padding:12px; background:transparent; color:#2563ff; border:1px solid #2563ff; border-radius:8px; font-size:0.85rem; font-weight:700; cursor:pointer; font-family:Arial,sans-serif; }
+
+/* TRANSFER SUCCESS */
+.suc-overlay { position:fixed; inset:0; background:#fff; z-index:1000; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px; }
+.suc-circle { width:90px; height:90px; border-radius:50%; border:4px solid #10b981; display:flex; align-items:center; justify-content:center; margin-bottom:20px; animation:popIn 0.4s ease; }
+@keyframes popIn { from{transform:scale(0);opacity:0} to{transform:scale(1);opacity:1} }
+.suc-check { font-size:2.5rem; color:#10b981; }
+.suc-title { font-size:1.3rem; font-weight:900; color:#0c0e1a; margin-bottom:6px; }
+.suc-sub { font-size:0.82rem; color:#8a93b0; margin-bottom:24px; text-align:center; }
+.suc-receipt { width:100%; background:#f8f9fc; border-radius:12px; padding:16px; margin-bottom:22px; border:1px solid #e2e6f0; }
+.suc-row { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #e2e6f0; font-size:0.82rem; }
+.suc-row:last-child { border-bottom:none; }
+.suc-label { color:#8a93b0; }
+.suc-val { font-weight:700; }
+.suc-btns { display:flex; gap:10px; width:100%; }
+.suc-share { flex:1; padding:12px; background:#f0f2f7; border:none; border-radius:8px; font-size:0.82rem; font-weight:700; cursor:pointer; font-family:Arial,sans-serif; }
+.suc-done { flex:1; padding:12px; background:#0c0e1a; color:#fff; border:none; border-radius:8px; font-size:0.82rem; font-weight:700; cursor:pointer; font-family:Arial,sans-serif; }
 </style>
 </head>
 <body>
@@ -288,6 +313,35 @@ body { font-family:Arial,sans-serif; background:#f0f2f7; color:#0c0e1a; min-heig
   </div>
 </div>
 
+<!-- SUSPENDED MODAL -->
+<div class="sus-overlay" id="susModal" style="display:none">
+  <div class="sus-box">
+    <div class="sus-icon">🔒</div>
+    <div class="sus-title">We locked your account due to unusual activity.</div>
+    <div class="sus-msg">You will not be able to access your account or make transactions until it is unlocked. Please contact NexaBank support for assistance.</div>
+    <button class="sus-btn1" onclick="document.getElementById('susModal').style.display='none';switchPage('support',document.getElementById('bn-support'))">Contact Support</button>
+    <button class="sus-btn2" onclick="logout()">Sign Out</button>
+  </div>
+</div>
+
+<!-- TRANSFER SUCCESS MODAL -->
+<div class="suc-overlay" id="sucModal" style="display:none">
+  <div class="suc-circle"><div class="suc-check">✓</div></div>
+  <div class="suc-title">Transfer Successful!</div>
+  <div class="suc-sub">Your transaction has been successfully submitted for processing.</div>
+  <div class="suc-receipt">
+    <div class="suc-row"><span class="suc-label">Amount Transfer</span><span class="suc-val" id="sucAmt">—</span></div>
+    <div class="suc-row"><span class="suc-label">Recipient</span><span class="suc-val" id="sucTo">—</span></div>
+    <div class="suc-row"><span class="suc-label">Narration</span><span class="suc-val" id="sucNote">—</span></div>
+    <div class="suc-row"><span class="suc-label">Date</span><span class="suc-val" id="sucDate">—</span></div>
+    <div class="suc-row"><span class="suc-label">New Balance</span><span class="suc-val" id="sucBal" style="color:#2563ff">—</span></div>
+  </div>
+  <div class="suc-btns">
+    <button class="suc-share" onclick="shareReceipt()">📤 Share Receipt</button>
+    <button class="suc-done" onclick="document.getElementById('sucModal').style.display='none';switchPage('home',document.getElementById('bn-home'))">Okay</button>
+  </div>
+</div>
+
 <div class="toast" id="tst"></div>
 
 <script>
@@ -317,8 +371,7 @@ async function loadProfile() {
   currentProfile = data;
 
   if (data.status === 'suspended') {
-    await sb.auth.signOut();
-    window.location.href = 'index.html?suspended=1';
+    document.getElementById('susModal').style.display = 'flex';
     return;
   }
 
@@ -410,7 +463,22 @@ async function executeSend() {
   const balStr = newBal.toLocaleString('en-US',{minimumFractionDigits:2});
   document.getElementById('balAmt').textContent = `$${balStr}`;
   document.getElementById('pd-bal').textContent = `$${balStr}`;
-  showMsg('send-msg', `✅ $${amount.toFixed(2)} sent to ${to}!`, 'ok');
+
+  // Show success modal
+  document.getElementById('sucAmt').textContent = `$${amount.toLocaleString('en-US',{minimumFractionDigits:2})}`;
+  document.getElementById('sucTo').textContent = to;
+  document.getElementById('sucNote').textContent = note;
+  document.getElementById('sucDate').textContent = new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+  document.getElementById('sucBal').textContent = `$${balStr}`;
+  document.getElementById('sucModal').style.display = 'flex';
+
+  document.getElementById('send-to').value='';
+  document.getElementById('send-amount').value='';
+  document.getElementById('send-note').value='';
+  btn.disabled=false; btn.textContent='Continue';
+  pendingTx = null;
+  loadTx();
+  sendEmailAlert('DEBIT', amount, `${note} → ${to}`, newBal);
 
   // Send debit email alert
   sendEmailAlert('DEBIT', amount, `${note} → ${to}`, newBal);
@@ -637,6 +705,12 @@ function showMsg(id, text, type) {
   const el = document.getElementById(id);
   el.textContent = text;
   el.className = 'msg ' + type;
+}
+
+function shareReceipt() {
+  const text = `NexaBank Transfer Receipt\n\nAmount: ${document.getElementById('sucAmt').textContent}\nTo: ${document.getElementById('sucTo').textContent}\nNote: ${document.getElementById('sucNote').textContent}\nDate: ${document.getElementById('sucDate').textContent}\nNew Balance: ${document.getElementById('sucBal').textContent}\n\nPowered by NexaBank`;
+  if (navigator.share) { navigator.share({ title:'NexaBank Receipt', text }); }
+  else { navigator.clipboard?.writeText(text).then(()=>toast('Receipt copied!')); }
 }
 
 function toast(msg) {
