@@ -69,6 +69,16 @@ body { font-family:Arial,sans-serif; background:#f0f2f7; color:#0c0e1a; min-heig
 .btn-main:disabled { background:#c0c4d0; cursor:not-allowed; }
 .btn-outline { width:100%; padding:11px; background:transparent; border:2px solid #2563ff; color:#2563ff; border-radius:8px; font-size:0.85rem; font-weight:700; cursor:pointer; font-family:Arial,sans-serif; margin-top:8px; }
 
+/* SEND UPGRADES */
+.qa-chips { display:flex; gap:6px; margin-top:8px; }
+.chip { flex:1; background:#f8f9fc; border:1px solid #e2e6f0; border-radius:8px; padding:8px 4px; font-size:0.72rem; font-weight:700; color:#2563ff; cursor:pointer; font-family:Arial,sans-serif; }
+.chip:active { background:#2563ff; color:#fff; }
+.avail-bal { font-size:0.68rem; color:#8a93b0; margin-top:6px; }
+.rv-row { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid #f0f2f7; font-size:0.82rem; gap:10px; }
+.rv-row:last-of-type { border-bottom:none; }
+.rv-row span { color:#8a93b0; font-size:0.66rem; text-transform:uppercase; letter-spacing:0.5px; flex-shrink:0; }
+.rv-row strong { text-align:right; word-break:break-word; }
+
 /* MSG */
 .msg { padding:9px 13px; border-radius:8px; font-size:0.78rem; font-weight:600; margin-bottom:10px; display:none; }
 .msg.err { background:rgba(239,68,68,0.1); color:#ef4444; border:1px solid rgba(239,68,68,0.2); display:block; }
@@ -191,10 +201,36 @@ body { font-family:Arial,sans-serif; background:#f0f2f7; color:#0c0e1a; min-heig
   <div class="card">
     <div class="ctitle">Send Money</div>
     <div class="msg" id="send-msg"></div>
-    <div class="field"><label>Recipient Email or Account Number</label><input type="text" id="send-to" placeholder="recipient@email.com"></div>
-    <div class="field"><label>Amount (USD)</label><input type="number" id="send-amount" placeholder="0.00" min="1" step="0.01"></div>
-    <div class="field"><label>Note (optional)</label><input type="text" id="send-note" placeholder="What's this for?"></div>
-    <button class="btn-main" onclick="initSend()" id="send-btn">Continue</button>
+
+    <div id="send-form">
+      <div class="field">
+        <label>Recipient Email or Account Number</label>
+        <input type="text" id="send-to" placeholder="recipient@email.com" oninput="onRecipientInput()">
+        <div id="send-match" style="font-size:0.72rem;margin-top:4px;min-height:16px"></div>
+      </div>
+      <div class="field">
+        <label>Amount (USD)</label>
+        <input type="number" id="send-amount" placeholder="0.00" min="1" step="0.01">
+        <div class="qa-chips">
+          <button type="button" class="chip" onclick="setAmt(20)">$20</button>
+          <button type="button" class="chip" onclick="setAmt(50)">$50</button>
+          <button type="button" class="chip" onclick="setAmt(100)">$100</button>
+          <button type="button" class="chip" onclick="setAmtMax()">Max</button>
+        </div>
+        <div class="avail-bal" id="availBal">Available: $0.00</div>
+      </div>
+      <div class="field"><label>Note (optional)</label><input type="text" id="send-note" placeholder="What's this for?"></div>
+      <button class="btn-main" onclick="initSend()" id="send-btn">Review Transfer</button>
+    </div>
+
+    <div id="send-review" style="display:none">
+      <div class="rv-row"><span>To</span><strong id="rv-to">—</strong></div>
+      <div class="rv-row"><span>Amount</span><strong id="rv-amount">—</strong></div>
+      <div class="rv-row"><span>Note</span><strong id="rv-note">—</strong></div>
+      <div class="rv-row"><span>Balance After</span><strong id="rv-newbal">—</strong></div>
+      <button class="btn-main" onclick="confirmSend()" id="confirm-send-btn">Confirm & Send</button>
+      <button class="btn-outline" onclick="editSend()">Edit</button>
+    </div>
   </div>
   <div class="card">
     <div class="ctitle">My Account Details</div>
@@ -385,6 +421,8 @@ async function loadProfile() {
   document.getElementById('acctSince').textContent = data.member_since || new Date(data.created_at||Date.now()).getFullYear();
   document.getElementById('myAcctNum').textContent = data.account_number||'—';
   document.getElementById('myAcctType').textContent = cap(data.account_type||'checking');
+  const availEl = document.getElementById('availBal');
+  if (availEl) availEl.textContent = `Available: $${bal}`;
 
   // Profile page
   document.getElementById('profileName').textContent = name;
@@ -429,6 +467,54 @@ async function loadTx() {
 }
 
 // ── SEND MONEY ────────────────────────────────────────────────────────
+let matchedRecipient = null;
+let recipientLookupTimer = null;
+
+function onRecipientInput() {
+  clearTimeout(recipientLookupTimer);
+  const val = document.getElementById('send-to').value.trim();
+  matchedRecipient = null;
+  const matchEl = document.getElementById('send-match');
+  if (!val) { matchEl.textContent = ''; return; }
+  matchEl.textContent = 'Looking up recipient…';
+  matchEl.style.color = '#8a93b0';
+  recipientLookupTimer = setTimeout(() => lookupRecipient(val), 450);
+}
+
+async function lookupRecipient(val) {
+  const matchEl = document.getElementById('send-match');
+  let found = null;
+  try {
+    const { data } = await sb.from('profiles').select('id,first_name,last_name,account_number,email')
+      .or(`account_number.eq.${val},email.eq.${val}`).limit(1);
+    if (data && data.length) found = data[0];
+  } catch (e) { /* lookup unavailable, fall through silently */ }
+
+  if (found && found.id === currentUser.id) {
+    matchedRecipient = null;
+    matchEl.textContent = "⚠ That's your own account";
+    matchEl.style.color = '#ef4444';
+    return;
+  }
+  if (found) {
+    matchedRecipient = found;
+    const fname = `${found.first_name||''} ${found.last_name||''}`.trim() || 'NexaBank customer';
+    matchEl.textContent = `✅ Matched: ${fname}`;
+    matchEl.style.color = '#10b981';
+  } else {
+    matchedRecipient = null;
+    matchEl.textContent = 'No NexaBank account found — double-check before sending';
+    matchEl.style.color = '#8a93b0';
+  }
+}
+
+function setAmt(v) {
+  document.getElementById('send-amount').value = v;
+}
+function setAmtMax() {
+  if (currentProfile) document.getElementById('send-amount').value = parseFloat(currentProfile.balance).toFixed(2);
+}
+
 function initSend() {
   const to = document.getElementById('send-to').value.trim();
   const amount = parseFloat(document.getElementById('send-amount').value);
@@ -436,13 +522,46 @@ function initSend() {
   if (!to || !amount) { showMsg('send-msg','Please fill in all fields','err'); return; }
   if (amount <= 0) { showMsg('send-msg','Enter a valid amount','err'); return; }
   if (!currentProfile || parseFloat(currentProfile.balance) < amount) { showMsg('send-msg','Insufficient balance','err'); return; }
+  if (currentProfile.account_number && to === currentProfile.account_number) { showMsg('send-msg',"You can't send money to your own account",'err'); return; }
 
-  // Check if PIN is set
+  pendingTx = {
+    to, amount, note,
+    recipientName: matchedRecipient ? `${matchedRecipient.first_name||''} ${matchedRecipient.last_name||''}`.trim() : null
+  };
+  showReview();
+}
+
+function showReview() {
+  document.getElementById('send-msg').className = 'msg';
+  document.getElementById('send-form').style.display = 'none';
+  document.getElementById('send-review').style.display = 'block';
+  const newBal = parseFloat(currentProfile.balance) - pendingTx.amount;
+  document.getElementById('rv-to').textContent = pendingTx.recipientName ? `${pendingTx.recipientName} (${pendingTx.to})` : pendingTx.to;
+  document.getElementById('rv-amount').textContent = `$${pendingTx.amount.toLocaleString('en-US',{minimumFractionDigits:2})}`;
+  document.getElementById('rv-note').textContent = pendingTx.note;
+  document.getElementById('rv-newbal').textContent = `$${newBal.toLocaleString('en-US',{minimumFractionDigits:2})}`;
+}
+
+function editSend() {
+  document.getElementById('send-review').style.display = 'none';
+  document.getElementById('send-form').style.display = 'block';
+}
+
+function resetSendView() {
+  pendingTx = null;
+  matchedRecipient = null;
+  document.getElementById('send-review').style.display = 'none';
+  document.getElementById('send-form').style.display = 'block';
+  document.getElementById('send-match').textContent = '';
+}
+
+function confirmSend() {
+  if (!pendingTx) return;
   if (currentProfile.transfer_pin) {
-    pendingTx = { to, amount, note };
     showPinModal('verify', 'Enter Transfer PIN', 'Enter your 4-digit PIN to confirm this transfer');
   } else {
     showMsg('send-msg','⚠ Please set a Transfer PIN first in your Profile tab','err');
+    editSend();
   }
 }
 
@@ -466,7 +585,7 @@ async function executeSend() {
 
   // Show success modal
   document.getElementById('sucAmt').textContent = `$${amount.toLocaleString('en-US',{minimumFractionDigits:2})}`;
-  document.getElementById('sucTo').textContent = to;
+  document.getElementById('sucTo').textContent = pendingTx.recipientName ? `${pendingTx.recipientName} (${to})` : to;
   document.getElementById('sucNote').textContent = note;
   document.getElementById('sucDate').textContent = new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
   document.getElementById('sucBal').textContent = `$${balStr}`;
@@ -475,19 +594,10 @@ async function executeSend() {
   document.getElementById('send-to').value='';
   document.getElementById('send-amount').value='';
   document.getElementById('send-note').value='';
-  btn.disabled=false; btn.textContent='Continue';
-  pendingTx = null;
+  btn.disabled=false; btn.textContent='Review Transfer';
+  resetSendView();
   loadTx();
   sendEmailAlert('DEBIT', amount, `${note} → ${to}`, newBal);
-
-  // Send debit email alert
-  sendEmailAlert('DEBIT', amount, `${note} → ${to}`, newBal);
-  document.getElementById('send-to').value='';
-  document.getElementById('send-amount').value='';
-  document.getElementById('send-note').value='';
-  btn.disabled=false; btn.textContent='Continue';
-  pendingTx = null;
-  loadTx();
 }
 
 // ── PIN SYSTEM ────────────────────────────────────────────────────────
@@ -688,6 +798,7 @@ function switchPage(id, btn) {
   document.getElementById('pg-' + id).classList.add('on');
   if (btn) btn.classList.add('on');
   window.scrollTo(0,0);
+  if (id !== 'send') resetSendView();
   if (id === 'history') loadTx();
   if (id === 'support') {
     loadChatHistory();
